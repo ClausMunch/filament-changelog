@@ -6,7 +6,7 @@ use Filament\Widgets\Widget;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
-use MyVendor\FilamentChangelog\Http\GithubService;
+use ClausMunch\FilamentChangelog\Http\GithubService;
 
 class ChangelogWidget extends Widget
 {
