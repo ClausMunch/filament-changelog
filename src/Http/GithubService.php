@@ -111,4 +111,30 @@ class GithubService
              return ['error' => "GitHub API error (Status: {$response->status()})."];
         }
     }
+
+    protected function getHeaders()
+    {
+        return [
+            'Accept' => 'application/vnd.github.v3+json',
+            'Authorization' => 'Bearer ' . config('filament-changelog.github_token'),
+        ];
+    }
+
+    public function getChangelog()
+    {
+        $repository = config('filament-changelog.github_repository');
+        
+        try {
+            $response = Http::withHeaders($this->getHeaders())
+                ->get("https://api.github.com/repos/{$repository}/releases");
+
+            if ($response->successful()) {
+                return $response->json();
+            }
+
+            throw new \Exception($response->json()['message'] ?? 'Unable to fetch changelog');
+        } catch (\Exception $e) {
+            throw new \Exception('Error loading changelog: ' . $e->getMessage() . "\n\nPlease check your `config/filament-changelog.php` file, `.env` variables (CHANGELOG_GITHUB_REPOSITORY, CHANGELOG_GITHUB_TOKEN), and ensure the GitHub token has the correct permissions.");
+        }
+    }
 }
