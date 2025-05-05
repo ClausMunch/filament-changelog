@@ -13,90 +13,120 @@ class GithubService
     protected string $repository;
     protected ?string $token;
     protected int $cacheDuration;
-    protected int $maxReleases;
+    protected int $maxItems;
+    protected string $fetchType;
 
     public function __construct()
     {
         $this->repository = config('filament-changelog.repository');
         $this->token = config('filament-changelog.github_token');
         $this->cacheDuration = config('filament-changelog.cache_duration', 3600);
-        $this->maxReleases = config('filament-changelog.max_releases', 10);
+        $this->maxItems = config('filament-changelog.max_items', 10);
+        $this->fetchType = config('filament-changelog.fetch_type', 'releases');
     }
 
     public function getChangelog(): ?array
     {
+        if ($this->fetchType === 'commits') {
+            return $this->getCommits();
+        }
         return $this->getReleases();
     }
 
-    /**
-     * Fetches releases from the configured GitHub repository.
-     *
-     * @return array{error?: string, releases?: array}|null Returns array with releases or error, or null if repo not configured.
-     */
     public function getReleases(): ?array
+    {
+        return $this->fetchItems('releases');
+    }
+
+    public function getCommits(): ?array
+    {
+        return $this->fetchItems('commits');
+    }
+
+    protected function fetchItems(string $type): ?array
     {
         if (empty($this->repository)) {
             Log::warning('[Filament Changelog] GitHub repository is not configured.');
             return ['error' => 'GitHub repository not configured.'];
         }
 
-        $cacheKey = 'filament-changelog::' . str_replace('/', '-', $this->repository);
+        $cacheKey = "filament-changelog::{$type}::" . str_replace('/', '-', $this->repository);
 
         if ($this->cacheDuration <= 0) {
-            // Cache disabled, fetch directly
             Cache::forget($cacheKey);
-            return $this->fetchFromApi();
+            return $this->fetchFromApi($type);
         }
 
-        // Remember uses seconds
-        return Cache::remember($cacheKey, $this->cacheDuration, function () {
-            return $this->fetchFromApi();
+        return Cache::remember($cacheKey, $this->cacheDuration, function () use ($type) {
+            return $this->fetchFromApi($type);
         });
     }
 
-    protected function fetchFromApi(): array
+    protected function fetchFromApi(string $type): array
     {
         try {
-            $response = $this->buildRequest()->get($this->getApiUrl());
+            $response = $this->buildRequest()->get($this->getApiUrl($type));
 
-            if (! $response->successful()) {
+            if (!$response->successful()) {
                 return $this->handleErrorResponse($response);
             }
 
-            // Limit the number of releases after fetching (API might return more per page)
-            $releases = array_slice($response->json(), 0, $this->maxReleases);
+            $items = array_slice($response->json(), 0, $this->maxItems);
 
-            return ['releases' => $releases];
+            if ($type === 'commits') {
+                $items = array_map(function ($commit) {
+                    return [
+                        'name' => substr($commit['sha'], 0, 7),
+                        'tag_name' => substr($commit['sha'], 0, 7),
+                        'body' => $commit['commit']['message'],
+                        'published_at' => $commit['commit']['author']['date'],
+                        'html_url' => $commit['html_url'],
+                    ];
+                }, $items);
+            }
+
+            return ['releases' => $items];
 
         } catch (\Throwable $exception) {
-            Log::error('[Filament Changelog] Failed to fetch releases: ' . $exception->getMessage());
+            Log::error('[Filament Changelog] Failed to fetch ' . $type . ': ' . $exception->getMessage());
             return ['error' => 'Could not connect to GitHub API or unexpected error occurred.'];
         }
     }
 
     protected function buildRequest(): PendingRequest
     {
+        Log::info('[Filament Changelog] Building request...');
+        Log::info('[Filament Changelog] Repository: ' . $this->repository);
+        Log::info('[Filament Changelog] Token present: ' . (!empty($this->token) ? 'Yes' : 'No'));
+        
         $request = Http::accept('application/vnd.github.v3+json')
-                       ->timeout(15); // Set a reasonable timeout
+                       ->timeout(15);
 
-        if (! empty($this->token)) {
-            $request->withToken($this->token);
-            Log::info('[Filament Changelog] Using token for authentication');
+        if (!empty($this->token)) {
+            Log::info('[Filament Changelog] Adding token to request');
+            $request = $request->withToken($this->token);
+            Log::info('[Filament Changelog] Token length: ' . strlen($this->token));
+            
+            // Test the token validity
+            $testResponse = Http::withToken($this->token)
+                ->get('https://api.github.com/user');
+            Log::info('[Filament Changelog] Token test status: ' . $testResponse->status());
+            
+            if (!$testResponse->successful()) {
+                Log::error('[Filament Changelog] Token validation failed: ' . $testResponse->body());
+            }
         } else {
-             Log::warning('[Filament Changelog] No GitHub token provided. Accessing public repo or may encounter rate limits/private repo issues.');
+            Log::warning('[Filament Changelog] No GitHub token provided for repository: ' . $this->repository);
         }
 
-        Log::info('[Filament Changelog] Repository: ' . $this->repository);
-Log::info('[Filament Changelog] Token length: ' . (strlen($this->token) ?? 'null'));
         return $request;
     }
 
-    protected function getApiUrl(): string
+    protected function getApiUrl(string $type): string
     {
-        // Ensure per_page doesn't exceed 100 (GitHub limit) and fetch enough
-        // if max_releases is high, though we slice later. Usually fetching 30 is fine.
-        $perPage = min(max($this->maxReleases, 10), 100);
-        return "https://api.github.com/repos/{$this->repository}/releases?per_page={$perPage}";
+        $perPage = min(max($this->maxItems, 10), 100);
+        $endpoint = $type === 'commits' ? 'commits' : 'releases';
+        return "https://api.github.com/repos/{$this->repository}/{$endpoint}?per_page={$perPage}";
     }
 
     protected function handleErrorResponse(Response $response): array

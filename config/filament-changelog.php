@@ -52,6 +52,8 @@ return [
     */
     'max_releases' => env('CHANGELOG_MAX_RELEASES', 10),
 
+    'fetch_type' => env('CHANGELOG_FETCH_TYPE', 'releases'), // 'releases' or 'commits'
+
     /*
     |--------------------------------------------------------------------------
     | Widget Configuration
