@@ -104,7 +104,11 @@ class GithubService
 
         if (!empty($this->token)) {
             Log::info('[Filament Changelog] Adding token to request');
-            $request = $request->withToken($this->token);
+            // Create a new request instance with the token
+            $request = Http::withToken($this->token)
+                          ->accept('application/vnd.github.v3+json')
+                          ->timeout(15);
+            
             Log::info('[Filament Changelog] Token length: ' . strlen($this->token));
             
             // Test the token validity
