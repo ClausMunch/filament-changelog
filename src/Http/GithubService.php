@@ -86,6 +86,8 @@ class GithubService
              Log::warning('[Filament Changelog] No GitHub token provided. Accessing public repo or may encounter rate limits/private repo issues.');
         }
 
+        Log::info('[Filament Changelog] Repository: ' . $this->repository);
+Log::info('[Filament Changelog] Token length: ' . (strlen($this->token) ?? 'null'));
         return $request;
     }
 
