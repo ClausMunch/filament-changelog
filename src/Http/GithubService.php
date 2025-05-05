@@ -23,6 +23,11 @@ class GithubService
         $this->maxReleases = config('filament-changelog.max_releases', 10);
     }
 
+    public function getChangelog(): ?array
+    {
+        return $this->getReleases();
+    }
+
     /**
      * Fetches releases from the configured GitHub repository.
      *
@@ -31,7 +36,7 @@ class GithubService
     public function getReleases(): ?array
     {
         if (empty($this->repository)) {
-             Log::warning('[Filament Changelog] GitHub repository is not configured.');
+            Log::warning('[Filament Changelog] GitHub repository is not configured.');
             return ['error' => 'GitHub repository not configured.'];
         }
 
@@ -76,6 +81,7 @@ class GithubService
 
         if (! empty($this->token)) {
             $request->withToken($this->token);
+            Log::info('[Filament Changelog] Using token for authentication');
         } else {
              Log::warning('[Filament Changelog] No GitHub token provided. Accessing public repo or may encounter rate limits/private repo issues.');
         }
@@ -109,32 +115,6 @@ class GithubService
              return ['error' => 'Access forbidden. Check token permissions or rate limits.'];
         } else {
              return ['error' => "GitHub API error (Status: {$response->status()})."];
-        }
-    }
-
-    protected function getHeaders()
-    {
-        return [
-            'Accept' => 'application/vnd.github.v3+json',
-            'Authorization' => 'Bearer ' . config('filament-changelog.github_token'),
-        ];
-    }
-
-    public function getChangelog()
-    {
-        $repository = config('filament-changelog.github_repository');
-        
-        try {
-            $response = Http::withHeaders($this->getHeaders())
-                ->get("https://api.github.com/repos/{$repository}/releases");
-
-            if ($response->successful()) {
-                return $response->json();
-            }
-
-            throw new \Exception($response->json()['message'] ?? 'Unable to fetch changelog');
-        } catch (\Exception $e) {
-            throw new \Exception('Error loading changelog: ' . $e->getMessage() . "\n\nPlease check your `config/filament-changelog.php` file, `.env` variables (CHANGELOG_GITHUB_REPOSITORY, CHANGELOG_GITHUB_TOKEN), and ensure the GitHub token has the correct permissions.");
         }
     }
 }
