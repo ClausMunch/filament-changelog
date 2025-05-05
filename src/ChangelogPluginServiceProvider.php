@@ -26,7 +26,7 @@ class ChangelogPluginServiceProvider extends ServiceProvider
 
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__.'/../config/filament-git-changelog.php' => config_path(self::PACKAGE_NAME . '.php'),
+                __DIR__.'/../config/filament-changelog.php' => config_path(self::PACKAGE_NAME . '.php'),
             ], self::PACKAGE_NAME . '-config');
 
             $this->publishes([
