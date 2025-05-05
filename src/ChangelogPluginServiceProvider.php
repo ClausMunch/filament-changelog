@@ -27,9 +27,13 @@ class ChangelogPluginServiceProvider extends PackageServiceProvider implements P
     {
         return static::$name;
     }
-
+/*
     public function register(Panel $panel): void
     {
+        */
+        public function register(): void
+{
+    // Removed call to parent::register() as PackageServiceProvider does not define a register method.
         if (config('filament-changelog.widget.enabled', true)) {
             $panel->widgets([
                 ChangelogWidget::class,
