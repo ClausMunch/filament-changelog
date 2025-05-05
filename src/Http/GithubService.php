@@ -65,13 +65,27 @@ class GithubService
     protected function fetchFromApi(string $type): array
     {
         try {
-            $response = $this->buildRequest()->get($this->getApiUrl($type));
+            $url = $this->getApiUrl($type);
+            Log::info('[Filament Changelog] Fetching from API: ' . $url);
+            
+            $request = $this->buildRequest();
+            $response = $request->get($url);
+            
+            Log::info('[Filament Changelog] Response status: ' . $response->status());
+            Log::info('[Filament Changelog] Response body: ' . json_encode($response->json()));
 
             if (!$response->successful()) {
                 return $this->handleErrorResponse($response);
             }
 
-            $items = array_slice($response->json(), 0, $this->maxItems);
+            $items = $response->json();
+            
+            if (empty($items)) {
+                Log::warning('[Filament Changelog] No ' . $type . ' found for repository: ' . $this->repository);
+                return ['error' => 'No ' . $type . ' found in this repository.'];
+            }
+
+            $items = array_slice($items, 0, $this->maxItems);
 
             if ($type === 'commits') {
                 $items = array_map(function ($commit) {
@@ -85,11 +99,13 @@ class GithubService
                 }, $items);
             }
 
+            Log::info('[Filament Changelog] Successfully fetched ' . count($items) . ' ' . $type);
             return ['releases' => $items];
 
         } catch (\Throwable $exception) {
             Log::error('[Filament Changelog] Failed to fetch ' . $type . ': ' . $exception->getMessage());
-            return ['error' => 'Could not connect to GitHub API or unexpected error occurred.'];
+            Log::error('[Filament Changelog] Stack trace: ' . $exception->getTraceAsString());
+            return ['error' => 'Could not connect to GitHub API or unexpected error occurred: ' . $exception->getMessage()];
         }
     }
 
