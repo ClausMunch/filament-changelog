@@ -14,7 +14,7 @@ class ChangelogPlugin implements Plugin
 
     public function register(Panel $panel): void
     {
-        $panel->registerWidgets([
+        $panel->widgets([
             Widgets\ChangelogWidget::class,
         ]);
     }
