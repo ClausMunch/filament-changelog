@@ -2,20 +2,19 @@
 
 namespace ClausMunch\FilamentChangelog;
 
-use Illuminate\Support\ServiceProvider; // Extends this
+use Filament\Contracts\Plugin;
+use Filament\Panel;
+use Illuminate\Support\ServiceProvider;
 
-// **DOES NOT** implement Plugin anymore
-class ChangelogPluginServiceProvider extends ServiceProvider
+class ChangelogPluginServiceProvider extends ServiceProvider implements Plugin
 {
-    // Package name constant for consistency
     public const PACKAGE_NAME = 'filament-changelog';
 
-    // Standard Laravel register method (bindings, merge config)
     public function register(): void
     {
         $this->mergeConfigFrom(
             __DIR__.'/../config/filament-changelog.php',
-            self::PACKAGE_NAME // Use const for config key
+            self::PACKAGE_NAME
         );
 
         $this->app->singleton(Http\GithubService::class, function ($app) {
@@ -23,7 +22,6 @@ class ChangelogPluginServiceProvider extends ServiceProvider
         });
     }
 
-    // Standard Laravel boot method (publishing, load views)
     public function boot(): void
     {
         $this->loadViewsFrom(__DIR__.'/../resources/views', self::PACKAGE_NAME);
@@ -31,14 +29,38 @@ class ChangelogPluginServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->publishes([
                 __DIR__.'/../config/filament-git-changelog.php' => config_path(self::PACKAGE_NAME . '.php'),
-            ], self::PACKAGE_NAME . '-config'); // Tag: filament-git-changelog-config
+            ], self::PACKAGE_NAME . '-config');
 
             $this->publishes([
-                 __DIR__.'/../resources/views' => resource_path('views/vendor/' . self::PACKAGE_NAME),
-            ], self::PACKAGE_NAME . '-views'); // Tag: filament-git-changelog-views
-
-            // Optional assets publishing
-            // $this->publishes([...], self::PACKAGE_NAME . '-assets');
+                __DIR__.'/../resources/views' => resource_path('views/vendor/' . self::PACKAGE_NAME),
+            ], self::PACKAGE_NAME . '-views');
         }
+    }
+
+    public function getId(): string
+    {
+        return self::PACKAGE_NAME;
+    }
+
+    public function registerPages(Panel $panel): void
+    {
+        // No pages to register for this plugin
+    }
+
+    public function registerResources(Panel $panel): void
+    {
+        // No resources to register for this plugin
+    }
+
+    public function registerWidgets(Panel $panel): void
+    {
+        $panel->registerWidgets([
+            Widgets\ChangelogWidget::class,
+        ]);
+    }
+
+    public function registerPermissions(Panel $panel): void
+    {
+        // No permissions to register for this plugin
     }
 }
