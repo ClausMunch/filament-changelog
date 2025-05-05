@@ -2,48 +2,43 @@
 
 namespace ClausMunch\FilamentChangelog;
 
-use Filament\Contracts\Plugin;
-use Filament\Panel;
-use Filament\Support\Assets\Css;
-use Filament\Support\Facades\FilamentAsset;
-use ClausMunch\FilamentChangelog\Widgets\ChangelogWidget; // make sure namespace is correct
-use Spatie\LaravelPackageTools\Package;
-use Spatie\LaravelPackageTools\PackageServiceProvider;
+use Illuminate\Support\ServiceProvider; // Extends this
 
-class ChangelogPluginServiceProvider extends PackageServiceProvider implements Plugin
+// **DOES NOT** implement Plugin anymore
+class ChangelogPluginServiceProvider extends ServiceProvider
 {
-    public static string $name = 'filament-changelog';
+    // Package name constant for consistency
+    public const PACKAGE_NAME = 'filament-changelog';
 
-    public function configurePackage(Package $package): void
+    // Standard Laravel register method (bindings, merge config)
+    public function register(): void
     {
-        $package
-            ->name(static::$name)
-            ->hasConfigFile()
-            ->hasViews();
+        $this->mergeConfigFrom(
+            __DIR__.'/../config/filament-git-changelog.php',
+            self::PACKAGE_NAME // Use const for config key
+        );
+
+        $this->app->singleton(Http\GithubService::class, function ($app) {
+            return new Http\GithubService();
+        });
     }
 
-    // Filament Plugin interface
-    public function getId(): string
+    // Standard Laravel boot method (publishing, load views)
+    public function boot(): void
     {
-        return static::$name;
-    }
+        $this->loadViewsFrom(__DIR__.'/../resources/views', self::PACKAGE_NAME);
 
-    public function configurePanel(Panel $panel): void
-    {
-        if (config('filament-changelog.widget.enabled', true)) {
-            $panel->widgets([
-                ChangelogWidget::class,
-            ]);
+        if ($this->app->runningInConsole()) {
+            $this->publishes([
+                __DIR__.'/../config/filament-git-changelog.php' => config_path(self::PACKAGE_NAME . '.php'),
+            ], self::PACKAGE_NAME . '-config'); // Tag: filament-git-changelog-config
+
+            $this->publishes([
+                 __DIR__.'/../resources/views' => resource_path('views/vendor/' . self::PACKAGE_NAME),
+            ], self::PACKAGE_NAME . '-views'); // Tag: filament-git-changelog-views
+
+            // Optional assets publishing
+            // $this->publishes([...], self::PACKAGE_NAME . '-assets');
         }
-
-        // Optional: Register custom CSS
-        // FilamentAsset::register([
-        //     Css::make('filament-changelog-styles', __DIR__ . '/../resources/dist/filament-changelog.css'),
-        // ], static::$name);
-    }
-
-    public static function make(): static
-    {
-        return app(static::class);
     }
 }
