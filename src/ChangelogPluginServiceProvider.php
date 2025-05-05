@@ -2,15 +2,13 @@
 
 namespace ClausMunch\FilamentChangelog;
 
-use Filament\Contracts\Plugin;
-use Filament\Panel;
 use Illuminate\Support\ServiceProvider;
 
-class ChangelogPluginServiceProvider extends ServiceProvider implements Plugin
+class ChangelogPluginServiceProvider extends ServiceProvider
 {
     public const PACKAGE_NAME = 'filament-changelog';
 
-    public function registerServices(): void
+    public function register(): void
     {
         $this->mergeConfigFrom(
             __DIR__.'/../config/filament-changelog.php',
@@ -35,41 +33,5 @@ class ChangelogPluginServiceProvider extends ServiceProvider implements Plugin
                 __DIR__.'/../resources/views' => resource_path('views/vendor/' . self::PACKAGE_NAME),
             ], self::PACKAGE_NAME . '-views');
         }
-    }
-
-    public function getId(): string
-    {
-        return self::PACKAGE_NAME;
-    }
-
-    public function registerPlugin(Panel $panel): void
-    {
-        // Register plugin-specific functionality here
-        $this->registerWidgets($panel);
-        $this->registerPages($panel);
-        $this->registerResources($panel);
-        $this->registerPermissions($panel);
-    }
-
-    public function registerPages(Panel $panel): void
-    {
-        // No pages to register for this plugin
-    }
-
-    public function registerResources(Panel $panel): void
-    {
-        // No resources to register for this plugin
-    }
-
-    public function registerWidgets(Panel $panel): void
-    {
-        $panel->registerWidgets([
-            Widgets\ChangelogWidget::class,
-        ]);
-    }
-
-    public function registerPermissions(Panel $panel): void
-    {
-        // No permissions to register for this plugin
     }
 }
