@@ -10,7 +10,7 @@ class ChangelogPluginServiceProvider extends ServiceProvider implements Plugin
 {
     public const PACKAGE_NAME = 'filament-changelog';
 
-    public function register(): void
+    public function registerServices(): void
     {
         $this->mergeConfigFrom(
             __DIR__.'/../config/filament-changelog.php',
@@ -40,6 +40,15 @@ class ChangelogPluginServiceProvider extends ServiceProvider implements Plugin
     public function getId(): string
     {
         return self::PACKAGE_NAME;
+    }
+
+    public function register(Panel $panel): void
+    {
+        // Register plugin-specific functionality here
+        $this->registerWidgets($panel);
+        $this->registerPages($panel);
+        $this->registerResources($panel);
+        $this->registerPermissions($panel);
     }
 
     public function registerPages(Panel $panel): void
