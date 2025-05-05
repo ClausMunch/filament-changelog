@@ -66,19 +66,35 @@ class GithubService
     {
         try {
             $url = $this->getApiUrl($type);
-            Log::info('[Filament Changelog] Fetching from API: ' . $url);
+            Log::debug('[Filament Changelog] Starting API fetch...', [
+                'url' => $url,
+                'repository' => $this->repository,
+                'type' => $type
+            ]);
             
             $request = $this->buildRequest();
-            $response = $request->get($url);
+            Log::debug('[Filament Changelog] Request built, attempting API call...', [
+                'headers' => $request->getHeaders()
+            ]);
             
-            Log::info('[Filament Changelog] Response status: ' . $response->status());
-            Log::info('[Filament Changelog] Response body: ' . json_encode($response->json()));
+            $response = $request->get($url);
+            Log::debug('[Filament Changelog] API response received', [
+                'status' => $response->status(),
+                'body' => $response->body()
+            ]);
 
             if (!$response->successful()) {
+                Log::error('[Filament Changelog] Request failed', [
+                    'status' => $response->status(),
+                    'body' => $response->json() ?? $response->body()
+                ]);
                 return $this->handleErrorResponse($response);
             }
 
             $items = $response->json();
+            Log::debug('[Filament Changelog] Response parsed', [
+                'itemCount' => count($items ?? [])
+            ]);
             
             if (empty($items)) {
                 Log::warning('[Filament Changelog] No ' . $type . ' found for repository: ' . $this->repository);
@@ -103,9 +119,11 @@ class GithubService
             return ['releases' => $items];
 
         } catch (\Throwable $exception) {
-            Log::error('[Filament Changelog] Failed to fetch ' . $type . ': ' . $exception->getMessage());
-            Log::error('[Filament Changelog] Stack trace: ' . $exception->getTraceAsString());
-            return ['error' => 'Could not connect to GitHub API or unexpected error occurred: ' . $exception->getMessage()];
+            Log::error('[Filament Changelog] Exception caught', [
+                'message' => $exception->getMessage(),
+                'trace' => $exception->getTraceAsString()
+            ]);
+            throw $exception;
         }
     }
 
