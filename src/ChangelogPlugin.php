@@ -18,4 +18,9 @@ class ChangelogPlugin implements Plugin
             Widgets\ChangelogWidget::class,
         ]);
     }
+
+    public function boot(Panel $panel): void
+    {
+        // Add any boot-time configuration here
+    }
 }
