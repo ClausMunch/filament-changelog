@@ -42,7 +42,7 @@ class ChangelogPluginServiceProvider extends ServiceProvider implements Plugin
         return self::PACKAGE_NAME;
     }
 
-    public function register(Panel $panel): void
+    public function registerPlugin(Panel $panel): void
     {
         // Register plugin-specific functionality here
         $this->registerWidgets($panel);
