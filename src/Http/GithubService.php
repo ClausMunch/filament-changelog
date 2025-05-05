@@ -66,21 +66,20 @@ class GithubService
     {
         try {
             $url = $this->getApiUrl($type);
-            Log::debug('[Filament Changelog] Starting API fetch...', [
+            Log::info('[Filament Changelog] Starting API fetch...', [
                 'url' => $url,
                 'repository' => $this->repository,
                 'type' => $type
             ]);
             
             $request = $this->buildRequest();
-            Log::debug('[Filament Changelog] Request built, attempting API call...', [
-                'headers' => $request->getHeaders()
-            ]);
+            Log::info('[Filament Changelog] Request built');
             
             $response = $request->get($url);
-            Log::debug('[Filament Changelog] API response received', [
+            Log::info('[Filament Changelog] API response received', [
                 'status' => $response->status(),
-                'body' => $response->body()
+                'successful' => $response->successful(),
+                'body' => $response->json()
             ]);
 
             if (!$response->successful()) {
