@@ -6,7 +6,7 @@ use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
-use MyVendor\FilamentChangelog\Widgets\ChangelogWidget;
+use ClausMunch\FilamentChangelog\Widgets\ChangelogWidget; // make sure namespace is correct
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -18,41 +18,30 @@ class ChangelogPluginServiceProvider extends PackageServiceProvider implements P
     {
         $package
             ->name(static::$name)
-            ->hasConfigFile() // expects config/filament-changelog.php
-            ->hasViews();     // expects resources/views
+            ->hasConfigFile()
+            ->hasViews();
     }
 
-    // Filament Plugin Interface Methods
+    // Filament Plugin interface
     public function getId(): string
     {
         return static::$name;
     }
-/*
-    public function register(Panel $panel): void
+
+    public function configurePanel(Panel $panel): void
     {
-        */
-        public function register(): void
-{
-    // Removed call to parent::register() as PackageServiceProvider does not define a register method.
         if (config('filament-changelog.widget.enabled', true)) {
             $panel->widgets([
                 ChangelogWidget::class,
             ]);
         }
 
-        // Optionally register CSS if needed for styling markdown,
-        // though Filament's built-in prose classes often suffice.
+        // Optional: Register custom CSS
         // FilamentAsset::register([
         //     Css::make('filament-changelog-styles', __DIR__ . '/../resources/dist/filament-changelog.css'),
-        // ], 'my-vendor/filament-changelog'); // Use package name
+        // ], static::$name);
     }
 
-    public function boot(Panel $panel): void
-    {
-        // Optional: Boot logic, e.g., publishing assets
-    }
-
-    // Optional: Define plugin instance for PanelProvider
     public static function make(): static
     {
         return app(static::class);
